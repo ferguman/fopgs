@@ -1,28 +1,36 @@
 from django.db import models
+from django.contrib.postgres.fields import JSONField
 from django.db.models import Q
 
 class Device(models.Model):
 
     participant = models.OneToOneField('Participant', primary_key=True, db_column='guid', 
+
                                        on_delete=models.CASCADE, related_name='device')
     parent_device = models.ForeignKey('self', on_delete=models.CASCADE, db_column='parent_guid', 
-                                      null=True, related_name='sub_devices')
-    device_type = models.ForeignKey('DeviceType_m', models.DO_NOTHING)
+                                      null=True, blank=True, related_name='sub_devices')
+    device_type = models.ForeignKey('DeviceType', models.DO_NOTHING)
     local_name = models.CharField(max_length=75)
     location = models.ForeignKey('Location', models.DO_NOTHING, db_column='location_id', blank=True, null=True)
+    configuration = JSONField()
 
     class Meta:
         managed = False
         db_table = 'device'
 
+    def __str__(self):
+        return self.local_name
 
-class DeviceType_m(models.Model):
+class DeviceType(models.Model):
 
     local_name = models.CharField(max_length=75)
 
     class Meta:
         managed = False
         db_table = 'device_type'
+
+    def __str__(self):
+        return self.local_name
 
 
 class EnvironmentAttribute(models.Model):
@@ -33,6 +41,8 @@ class EnvironmentAttribute(models.Model):
         managed = False
         db_table = 'environment_attribute'
 
+    def __str__(self):
+        return self.name
 
 class EnvironmentObservation(models.Model):
 
@@ -47,6 +57,7 @@ class EnvironmentObservation(models.Model):
         managed = False
         db_table = 'environment_observation'
 
+
 class EnvironmentSubject(models.Model): 
 
     name = models.CharField(unique=True, max_length=75) 
@@ -55,6 +66,8 @@ class EnvironmentSubject(models.Model):
         managed = False
         db_table = 'environment_subject'
 
+    def __str__(self):
+        return self.name
 
 class EnvironmentSubjectLocation(models.Model): 
 
@@ -78,39 +91,91 @@ class Location(models.Model):
         managed = False
         db_table = 'location'
 
+    def __str__(self):
+        return self.local_name
+
 
 class Organization(models.Model):
 
     guid = models.UUIDField(primary_key=True)
-    parent_org = models.ForeignKey('self', on_delete=models.CASCADE, null=True, related_name='sub_organization')
+    parent_org = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_organization')
     local_name = models.CharField(max_length=75, db_column='local_name')
 
     class Meta:
         managed = False
         db_table = 'organization'
 
+    def __str__(self):
+        return self.local_name
+
+class Person(models.Model): 
+
+    participant = models.OneToOneField('Participant', primary_key=True, db_column='guid', 
+                                       on_delete=models.CASCADE, related_name='person')
+
+    nick_name = models.CharField(max_length=75, db_column='nick_name')
+    django_username = models.CharField(max_length=150, db_column='django_username')
+
+    class Meta:
+        managed = False
+        db_table = 'person'
+
+    def __str__(self):
+        return self.django_username
 
 class Participant(models.Model): 
 
     guid = models.UUIDField(primary_key=True) 
-    organization = models.ForeignKey(Organization, models.DO_NOTHING, db_column='organization_guid', blank=True, null=True) 
+    organization = models.ForeignKey(Organization, models.CASCADE, 
+                                     db_column='organization_guid', blank=True, null=True) 
  
     class Meta: 
         managed = False 
         db_table = 'participant' 
 
+# TODO get rid of the ParticipantKey class after you get image uploading working. And delete the table from Postgresql
 
-class Person(models.Model):
+class PhenotypeImage(models.Model):
 
-    #participant = models.OneToOneField(Participant, primary_key=True, db_column='guid', parent_link=True, 
-    #                                   on_delete=models.CASCADE)
-    participant = models.OneToOneField(Participant, primary_key=True, db_column='guid',  
-                                       on_delete=models.CASCADE)
-    nick_name = models.CharField(max_length=75)
+    phenotype_observation = models.OneToOneField('PhenotypeObservation', primary_key=True, 
+                                                 db_column='phenotype_observation_id',
+                                                 on_delete=models.CASCADE) 
+    s3_reference = models.CharField(max_length=256) 
+ 
+    class Meta: 
+        managed = True 
+        db_table = 'phenotype_image'
+
+    def __str__(self):
+        return str(self.phenotype_observation)
+
+class PhenotypeObservation(models.Model):
+
+    participant = models.ForeignKey('Participant', models.DO_NOTHING, db_column='participant_guid',
+                                    related_name='phenotype_observations')
+    plant_group = models.ForeignKey('PlantGroup', models.DO_NOTHING, db_column='plant_group_guid',
+                                    related_name='phenotype_observations')
+    utc_timestamp = models.DateTimeField() 
 
     class Meta:
         managed = True
-        db_table = 'person'
+        db_table = 'phenotype_observation'
+
+    def __str__(self):
+        return str(self.id)
+
+class PlantGroup(models.Model):
+
+    guid = models.UUIDField(primary_key=True, db_column='guid')
+    local_name = models.CharField(max_length=75, blank=False, null=False) 
+
+    class Meta:
+        managed = True
+        db_table = 'plant_group'
+
+    def __str__(self):
+        return str(self.local_name)
+
 
 class ScalarEnvironmentObservation(models.Model): 
 

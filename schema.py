@@ -2,7 +2,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from django.db.models import Q
 
-from graphql_server.models import Device, DeviceType_m, EnvironmentAttribute, EnvironmentObservation, EnvironmentSubject 
+from graphql_server.models import Device, DeviceType, EnvironmentAttribute, EnvironmentObservation, EnvironmentSubject 
 from graphql_server.models import EnvironmentSubjectLocation, Location, Organization, Participant, Person
 from graphql_server.models import ScalarEnvironmentObservation
 
@@ -10,9 +10,9 @@ class DeviceObj(DjangoObjectType):
     class Meta:
         model = Device
 
-class DeviceType(DjangoObjectType):
+class DeviceTypeObj(DjangoObjectType):
     class Meta:
-        model = DeviceType_m
+        model = DeviceType
 
 class EnvironmentAttributeObj(DjangoObjectType):
     class Meta:
@@ -65,10 +65,10 @@ class Query(object):
         return Device.objects.all()
 
     # ######## DeviceType #########
-    device_types = graphene.List(DeviceType)
+    device_types = graphene.List(DeviceTypeObj)
 
     def resolve_device_types(self, info, **kwargs):
-        return DeviceType_m.objects.all()
+        return DeviceType.objects.all()
 
     # ######## Environment Attribute #########
     environment_attributes = graphene.List(EnvironmentAttributeObj)
@@ -81,12 +81,6 @@ class Query(object):
                                              device_name=graphene.String(), first=graphene.Int())
     
     def resolve_environment_observations(self, info, first=None, device_name=None, attribute_name=None, **kwargs):
-        """
-        if device_name:
-            filter = (Q(
-        if first:
-            return EnvironmentObservation.objects.all()[:first]
-        """
         return EnvironmentObservation.objects.order_by()[:50]
 
     # ######## EnvironmentSubject #########
