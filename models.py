@@ -133,7 +133,6 @@ class Participant(models.Model):
         managed = False 
         db_table = 'participant' 
 
-# TODO get rid of the ParticipantKey class after you get image uploading working. And delete the table from Postgresql
 
 class PhenotypeImage(models.Model):
 
